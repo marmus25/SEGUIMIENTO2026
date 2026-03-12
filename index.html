@@ -190,6 +190,30 @@ tr:hover td{background:rgba(46,117,182,.07);}
 ._smbtn{display:block;width:100%;text-align:left;background:#0d1b2e;border:2px solid #2A4A70;border-radius:10px;color:#e8f0ff;font-size:1rem;padding:13px 16px;margin-bottom:7px;cursor:pointer;transition:background .1s;}
 ._smbtn:hover,._smbtn:focus{background:#1e3a5f;outline:none;}
 #_smcancel{display:block;width:100%;background:transparent;border:2px solid #2A4A70;border-radius:10px;color:#7A9CC0;padding:11px;margin-top:4px;cursor:pointer;font-size:.9rem;}
+
+/* ── MODAL ACTA ── */
+#acta-ov{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+#acta-ov.on{display:flex;}
+#acta-box{background:#0d1b2e;border:2px solid var(--border);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;}
+.acta-hdr{background:linear-gradient(135deg,#1e3a5f,#0A1525);border-bottom:2px solid var(--accent);padding:12px 18px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.acta-hdr-tit{font-family:'Bebas Neue';font-size:1.2rem;color:var(--accent);letter-spacing:1px;}
+.acta-hdr-sub{font-size:.62rem;color:var(--muted);margin-top:2px;}
+.acta-cerrar{background:transparent;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;}
+.acta-body{padding:16px 18px;display:flex;flex-direction:column;gap:11px;overflow-y:auto;}
+.acta-fila{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.acta-campo{display:flex;flex-direction:column;gap:4px;}
+.acta-campo.full{grid-column:1/-1;}
+.acta-lbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:800;}
+.acta-input{background:var(--card);border:2px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.82rem;color:var(--text);font-family:'Nunito',sans-serif;outline:none;width:100%;}
+.acta-input:focus{border-color:var(--accent);}
+textarea.acta-input{resize:vertical;min-height:68px;line-height:1.5;}
+.acta-faltas-prev{background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;max-height:90px;overflow-y:auto;font-size:.72rem;display:flex;flex-direction:column;gap:3px;}
+.acta-falta-item{display:flex;align-items:center;gap:6px;}
+.acta-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 18px 16px;flex-shrink:0;}
+.acta-btn-pdf{background:#1e3a5f;color:#FFD700;border:2px solid rgba(255,215,0,.4);border-radius:10px;padding:11px;font-family:'Bebas Neue';font-size:1rem;letter-spacing:1px;cursor:pointer;outline:none;}
+.acta-btn-pdf:hover,.acta-btn-pdf:focus{background:#2a4f7a;box-shadow:0 0 0 3px rgba(255,215,0,.2);}
+.acta-btn-wa{background:rgba(37,211,102,.12);color:#25D366;border:2px solid rgba(37,211,102,.35);border-radius:10px;padding:11px;font-family:'Bebas Neue';font-size:1rem;letter-spacing:1px;cursor:pointer;outline:none;}
+.acta-btn-wa:hover,.acta-btn-wa:focus{background:rgba(37,211,102,.2);box-shadow:0 0 0 3px rgba(37,211,102,.2);}
 </style>
 </head>
 <body>
@@ -340,9 +364,16 @@ tr:hover td{background:rgba(46,117,182,.07);}
         <div>Selecciona un estudiante</div>
       </div>
       <div id="isel" style="display:none;flex-direction:column;overflow:hidden;flex:1;">
-        <div class="isel-hdr">
-          <div class="isel-name" id="isel-name">—</div>
-          <div class="isel-curso" id="isel-curso">—</div>
+        <div class="isel-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div class="isel-name" id="isel-name">—</div>
+            <div class="isel-curso" id="isel-curso">—</div>
+          </div>
+          <button id="isel-acta-btn" onclick="abrirActaDesdeDocente()"
+            style="background:rgba(46,117,182,.18);border:2px solid rgba(46,117,182,.45);color:var(--lblue);
+            border-radius:8px;padding:6px 10px;font-family:'Bebas Neue';font-size:.8rem;letter-spacing:1px;
+            cursor:pointer;white-space:nowrap;flex-shrink:0;outline:none;"
+            title="Generar Acta de Compromiso">&#128203; ACTA</button>
         </div>
         <div class="ilist" id="ilist"></div>
       </div>
@@ -403,6 +434,77 @@ tr:hover td{background:rgba(46,117,182,.07);}
       <table><thead><tr>
         <th>Fecha</th><th>Curso</th><th>Estudiante</th><th>Tipo</th><th>Infracción</th><th>Docente</th><th>&#128465;</th>
       </tr></thead><tbody id="ptbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ACTA DE COMPROMISO -->
+<div id="acta-ov">
+  <div id="acta-box">
+    <div class="acta-hdr">
+      <div>
+        <div class="acta-hdr-tit">&#128203; Acta de Compromiso Disciplinario</div>
+        <div class="acta-hdr-sub">U.E. Marista &ldquo;Nuestra Se&ntilde;ora del Pilar&rdquo; &mdash; Fe y Alegr&iacute;a &mdash; 2026</div>
+      </div>
+      <button class="acta-cerrar" onclick="actaCerrar()">&#10005;</button>
+    </div>
+    <div class="acta-body">
+      <!-- Datos fijos -->
+      <div class="acta-fila">
+        <div class="acta-campo">
+          <div class="acta-lbl">Estudiante</div>
+          <div class="acta-input" id="acta-est" style="background:rgba(0,0,0,.2);border-style:dashed;font-weight:800;color:var(--accent);">—</div>
+        </div>
+        <div class="acta-campo">
+          <div class="acta-lbl">Curso</div>
+          <div class="acta-input" id="acta-cur" style="background:rgba(0,0,0,.2);border-style:dashed;color:var(--lblue);">—</div>
+        </div>
+      </div>
+      <!-- Faltas registradas -->
+      <div class="acta-campo full">
+        <div class="acta-lbl">&#9888; Faltas que motivan esta acta</div>
+        <div class="acta-faltas-prev" id="acta-faltas-prev"></div>
+      </div>
+      <!-- Docente y tutor -->
+      <div class="acta-fila">
+        <div class="acta-campo">
+          <div class="acta-lbl">Docente responsable</div>
+          <input type="text" class="acta-input" id="acta-docente" placeholder="Prof. Marcelo Zurita" value="Prof. Marcelo Zurita">
+        </div>
+        <div class="acta-campo">
+          <div class="acta-lbl">Padre / Madre / Tutor presente</div>
+          <input type="text" class="acta-input" id="acta-tutor" placeholder="Nombre completo">
+        </div>
+      </div>
+      <!-- Fecha -->
+      <div class="acta-campo full">
+        <div class="acta-lbl">Fecha de la reunión</div>
+        <input type="date" class="acta-input" id="acta-fecha">
+      </div>
+      <!-- Descripción hechos -->
+      <div class="acta-campo full">
+        <div class="acta-lbl">Descripción de los hechos</div>
+        <textarea class="acta-input" id="acta-hechos" rows="3" placeholder="Describe brevemente la situación disciplinaria que motiva esta acta..."></textarea>
+      </div>
+      <!-- Compromisos -->
+      <div class="acta-campo full">
+        <div class="acta-lbl">Compromisos del estudiante</div>
+        <textarea class="acta-input" id="acta-compromisos" rows="3" placeholder="1. &#10;2. &#10;3. "></textarea>
+      </div>
+      <!-- Seguimiento -->
+      <div class="acta-campo full">
+        <div class="acta-lbl">Fecha de seguimiento (opcional)</div>
+        <input type="date" class="acta-input" id="acta-seguimiento">
+      </div>
+      <!-- Observaciones adicionales -->
+      <div class="acta-campo full">
+        <div class="acta-lbl">Observaciones adicionales (opcional)</div>
+        <textarea class="acta-input" id="acta-obs" rows="2" placeholder="Antecedentes, contexto familiar, acuerdos especiales..."></textarea>
+      </div>
+    </div>
+    <div class="acta-btns">
+      <button class="acta-btn-pdf" onclick="actaGenerarPDF()">&#128196; GENERAR ACTA PDF</button>
+      <button class="acta-btn-wa" onclick="actaCopiarWA()">&#128241; COPIAR PARA WHATSAPP</button>
     </div>
   </div>
 </div>
@@ -676,11 +778,29 @@ function _smAbrir(){
       '</div>'+
       '<div style="color:#7A9CC0;font-size:.78rem;margin-bottom:10px;">Art. '+s.a+'</div>'+
       btns+
+      '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">'+
+        '<input id="_sm_otro" type="text" placeholder="✏️ Otro motivo (escribe aquí)..."'+
+          ' style="flex:1;background:#0d1b2e;border:2px solid #2A4A70;border-radius:10px;color:#e8f0ff;'+
+          'padding:10px 14px;font-size:.9rem;font-family:\'Nunito\',sans-serif;outline:none;"'+
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();_smElegirOtro();}"'+
+          ' onfocus="this.style.borderColor=\'#FFD700\'" onblur="this.style.borderColor=\'#2A4A70\'">'+
+        '<button onclick="_smElegirOtro()" style="background:#1e3a5f;border:2px solid rgba(255,215,0,.4);'+
+          'color:#FFD700;border-radius:10px;padding:10px 14px;font-family:\'Bebas Neue\';font-size:.9rem;'+
+          'letter-spacing:1px;cursor:pointer;white-space:nowrap;">OK</button>'+
+      '</div>'+
       '<button onclick="_smCerrar()" id="_smcancel">✕ Cancelar</button>'+
     '</div>';
   document.body.appendChild(ov);
   ov.addEventListener('click',function(e){if(e.target===ov)_smCerrar();});
   setTimeout(()=>{const b=ov.querySelector('._smbtn');if(b)b.focus();},50);
+}
+function _smElegirOtro(){
+  if(!_SM)return;
+  const val=document.getElementById('_sm_otro').value.trim();
+  if(!val){document.getElementById('_sm_otro').focus();return;}
+  const desc=_SM.sub.t+' - '+val;
+  _regFin(_SM.tipo,_SM.sub.c,desc);
+  _smCerrar();
 }
 
 // FINALIZAR
@@ -688,9 +808,16 @@ function mostrarFin(){
   const res=document.getElementById('fresumen');
   res.innerHTML=pend.length?pend.map(p=>{
     const col=p[3]==='L'?'var(--leve)':p[3]==='G'?'var(--grave)':'var(--rojo)';
-    return'<div class="frow"><span style="font-weight:800">'+p[2].split(',')[0]+'</span>'
+    const nomEnc=encodeURIComponent(p[2]),curEnc=encodeURIComponent(p[1]);
+    return'<div class="frow" style="gap:6px;">'
+      +'<span style="font-weight:800;flex:1;">'+p[2].split(',')[0]+'</span>'
       +'<span style="color:var(--muted);font-size:.7rem">'+p[1]+'</span>'
-      +'<span class="fcod" style="color:'+col+'">'+p[4]+'</span></div>';
+      +'<span class="fcod" style="color:'+col+'">'+p[4]+'</span>'
+      +'<button onclick="abrirActa(decodeURIComponent(\''+nomEnc+'\'),decodeURIComponent(\''+curEnc+'\'))" '
+      +'style="background:rgba(46,117,182,.15);border:1px solid rgba(46,117,182,.35);color:var(--lblue);'
+      +'border-radius:4px;padding:1px 6px;font-size:.62rem;font-weight:800;cursor:pointer;flex-shrink:0;" '
+      +'title="Acta de compromiso">&#128203;</button>'
+      +'</div>';
   }).join(''):'<div style="text-align:center;color:var(--muted);padding:10px">Sin registros</div>';
   const dg=document.getElementById('dgrid');dg.innerHTML='';
   DOCS.forEach(d=>{
@@ -768,8 +895,9 @@ async function cargarPanel(){
         +'<td style="font-size:.7rem">'+(r[5]||'')+'</td>'
         +'<td style="color:var(--muted);font-size:.7rem">'+(r[6]||'')+'</td>'
         +'<td style="display:flex;gap:3px;">'
-        +'<button onclick="generarPDF(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:var(--accent);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;">📄</button>'
-        +'<button onclick="elimReg('+idx+')" style="background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.3);color:var(--rojo);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;">✕</button>'
+        +'<button onclick="generarPDF(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:var(--accent);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Informe PDF">📄</button>'
+        +'<button onclick="abrirActa(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(46,117,182,.15);border:1px solid rgba(46,117,182,.35);color:var(--lblue);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Acta de compromiso">📋</button>'
+        +'<button onclick="elimReg('+idx+')" style="background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.3);color:var(--rojo);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Eliminar">✕</button>'
         +'</td></tr>';
     }).join('');
   }catch(e){document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--rojo)">⚠️ Sin conexión</td></tr>';}
@@ -786,8 +914,244 @@ function elimReg(idx){
     });
 }
 
-// ══════ LOGIN ══════
-var SESSION = { nombre:'Docente', rol:'admin' };
+
+// Abre el Acta desde Vista Docente con el estudiante actualmente seleccionado
+function abrirActaDesdeDocente() {
+  if (!estAct || !curAct) { showToast('Selecciona un estudiante primero', true); return; }
+  abrirActa(estAct.nombre, curAct.id);
+}
+
+// ══════ ACTA DE COMPROMISO ══════
+var _actaCtx = { nombre:'', curso:'' };
+
+function abrirActa(nombre, curso) {
+  _actaCtx = { nombre, curso };
+  // Datos fijos
+  document.getElementById('acta-est').textContent = nombre;
+  document.getElementById('acta-cur').textContent = curso;
+  // Fecha hoy
+  var hoy = new Date();
+  var fechaStr = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
+  document.getElementById('acta-fecha').value = fechaStr;
+  document.getElementById('acta-seguimiento').value = '';
+  // Limpiar campos editables
+  document.getElementById('acta-tutor').value = '';
+  document.getElementById('acta-hechos').value = '';
+  document.getElementById('acta-compromisos').value = '';
+  document.getElementById('acta-obs').value = '';
+  // Previsualizar faltas del estudiante
+  var faltas = regsG.filter(function(r){ return r[2]===nombre && r[1]===curso; });
+  var prev = document.getElementById('acta-faltas-prev');
+  if (faltas.length) {
+    prev.innerHTML = faltas.map(function(r){
+      var col = r[3]==='L'?'var(--leve)':r[3]==='G'?'var(--grave)':'var(--rojo)';
+      var tipo = r[3]==='L'?'LEVE':r[3]==='G'?'GRAVE':'MUY GRAVE';
+      return '<div class="acta-falta-item">'
+        +'<span style="background:'+col+'22;color:'+col+';font-size:.58rem;font-weight:900;padding:1px 5px;border-radius:4px;white-space:nowrap;">'+tipo+'</span>'
+        +'<span style="color:var(--muted);font-size:.68rem;">'+(r[0]||'—')+'</span>'
+        +'<span style="color:var(--text);font-size:.7rem;font-weight:700;">'+(r[4]||'')+'</span>'
+        +'<span style="color:var(--muted);font-size:.68rem;flex:1;">'+(r[5]||'')+'</span>'
+        +'</div>';
+    }).join('');
+  } else {
+    prev.innerHTML = '<span style="color:var(--muted);font-size:.72rem;">Sin faltas registradas en Sheets. Puedes completar el acta igualmente.</span>';
+  }
+  // Auto-rellenar compromisos si hay faltas graves/muy graves
+  var nG = faltas.filter(function(r){ return r[3]==='G'; }).length;
+  var nMG = faltas.filter(function(r){ return r[3]==='MG'; }).length;
+  if ((nG > 0 || nMG > 0) && !document.getElementById('acta-compromisos').value) {
+    document.getElementById('acta-compromisos').value =
+      '1. Mejorar conducta y cumplir el Reglamento NSP 2026.\n'
+      +'2. Comunicar a sus padres/tutores sobre esta situación.\n'
+      +'3. Presentarse a seguimiento con el docente responsable.';
+  }
+  document.getElementById('acta-ov').classList.add('on');
+  setTimeout(function(){ document.getElementById('acta-docente').focus(); }, 100);
+}
+
+function actaCerrar() {
+  document.getElementById('acta-ov').classList.remove('on');
+}
+
+function _actaDatos() {
+  var nombre = _actaCtx.nombre;
+  var curso = _actaCtx.curso;
+  var estInfo = (ED[curso]||[]).find(function(e){ return e.nombre===nombre; }) || {num:'—'};
+  var faltas = regsG.filter(function(r){ return r[2]===nombre && r[1]===curso; });
+  var docente = document.getElementById('acta-docente').value.trim() || 'Docente NSP';
+  var tutor = document.getElementById('acta-tutor').value.trim() || '___________________________';
+  var fechaRaw = document.getElementById('acta-fecha').value;
+  var fechaDisp = fechaRaw ? (function(){
+    var p = fechaRaw.split('-');
+    var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    return p[2]+' de '+meses[parseInt(p[1],10)-1]+' de '+p[0];
+  })() : new Date().toLocaleDateString('es-BO',{day:'numeric',month:'long',year:'numeric'});
+  var seguimiento = (function(){
+    var s = document.getElementById('acta-seguimiento').value;
+    if (!s) return '';
+    var p = s.split('-');
+    var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    return p[2]+' de '+meses[parseInt(p[1],10)-1]+' de '+p[0];
+  })();
+  var hechos = document.getElementById('acta-hechos').value.trim() || 'Sin descripción registrada.';
+  var compromisos = document.getElementById('acta-compromisos').value.trim() || 'Sin compromisos registrados.';
+  var obs = document.getElementById('acta-obs').value.trim();
+  var nL = faltas.filter(function(r){ return r[3]==='L'; }).length;
+  var nG = faltas.filter(function(r){ return r[3]==='G'; }).length;
+  var nMG = faltas.filter(function(r){ return r[3]==='MG'; }).length;
+  return { nombre, curso, estInfo, faltas, docente, tutor, fechaDisp, seguimiento, hechos, compromisos, obs, nL, nG, nMG };
+}
+
+function actaGenerarPDF() {
+  var d = _actaDatos();
+  function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var filas = d.faltas.map(function(r){
+    var col = r[3]==='L'?'#e67e22':r[3]==='G'?'#e74c3c':'#8e44ad';
+    var tipo = r[3]==='L'?'LEVE':r[3]==='G'?'GRAVE':'MUY GRAVE';
+    return '<tr>'
+      +'<td style="padding:4px 6px;font-size:10px;color:#555">'+escH(r[0]||'—')+'</td>'
+      +'<td><span style="background:'+col+'22;color:'+col+';padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700">'+tipo+'</span></td>'
+      +'<td style="font-size:10px;font-weight:700;color:'+col+'">'+escH(r[4]||'—')+'</td>'
+      +'<td style="font-size:10px;color:#333">'+escH(r[5]||'—')+'</td>'
+      +'<td style="font-size:10px;color:#777">'+escH(r[6]||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+  var tablaFaltas = d.faltas.length
+    ? '<table style="width:100%;border-collapse:collapse;margin-top:6px;">'
+      +'<thead><tr style="background:#1e3a5f;color:#fff">'
+      +'<th style="padding:5px 6px;text-align:left;font-size:9px;letter-spacing:.5px">FECHA</th>'
+      +'<th style="font-size:9px;letter-spacing:.5px">TIPO</th>'
+      +'<th style="font-size:9px;letter-spacing:.5px">CÓD.</th>'
+      +'<th style="font-size:9px;letter-spacing:.5px">DESCRIPCIÓN</th>'
+      +'<th style="font-size:9px;letter-spacing:.5px">DOCENTE</th>'
+      +'</tr></thead><tbody>'+filas+'</tbody></table>'
+    : '<p style="font-size:10px;color:#888;font-style:italic;margin:4px 0 0;">No se encontraron faltas previas en el registro digital.</p>';
+  var comprHtml = escH(d.compromisos).replace(/\n/g,'<br>');
+  var hechosHtml = escH(d.hechos).replace(/\n/g,'<br>');
+  var obsBloque = d.obs
+    ? '<div style="background:#f8f9fa;border-left:3px solid #1e3a5f;padding:8px 12px;margin-top:12px;border-radius:0 6px 6px 0;">'
+      +'<div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px;">Observaciones adicionales</div>'
+      +'<p style="font-size:11px;color:#333;margin:0;line-height:1.6;">'+escH(d.obs).replace(/\n/g,'<br>')+'</p></div>'
+    : '';
+  var seguimientoBloque = d.seguimiento
+    ? '<div style="background:#fff8e1;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;margin-top:12px;font-size:10px;color:#856404;">'
+      +'&#128197; <strong>Fecha de seguimiento:</strong> '+escH(d.seguimiento)+'</div>'
+    : '';
+  var html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
+    +'<title>Acta &mdash; '+escH(d.nombre)+'</title>'
+    +'<style>@page{margin:1.5cm}body{font-family:Arial,sans-serif;color:#222;margin:0;font-size:11px}'
+    +'.hdr{background:#1e3a5f;color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}'
+    +'.logo{font-size:18px;font-weight:900;color:#FFD700;letter-spacing:2px}'
+    +'.sec{font-size:10px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #1e3a5f;padding-bottom:3px;margin:14px 0 6px}'
+    +'.ficha{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:10px 14px;margin-top:10px}'
+    +'.lbl{font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px}.val{font-size:12px;font-weight:700;color:#1e3a5f}'
+    +'.sem{display:flex;gap:8px;margin-top:8px}'
+    +'.sb{flex:1;text-align:center;padding:8px;border-radius:6px}'
+    +'</style></head><body>'
+    +'<div class="hdr"><div>'
+    +'<div class="logo">NSP 2026</div>'
+    +'<div style="font-size:9px;opacity:.8">U.E. Marista &ldquo;Nuestra Se&ntilde;ora del Pilar&rdquo; &mdash; Fe y Alegr&iacute;a &mdash; Cochabamba</div>'
+    +'</div>'
+    +'<div style="text-align:right"><div style="font-size:13px;font-weight:700">ACTA DE COMPROMISO DISCIPLINARIO</div>'
+    +'<div style="font-size:9px;opacity:.8">Gesti&oacute;n 2026</div></div></div>'
+    +'<div style="padding:0 18px 18px">'
+    +'<div class="ficha">'
+    +'<div><div class="lbl">Estudiante</div><div class="val">'+escH(d.nombre)+'</div></div>'
+    +'<div><div class="lbl">Curso / N&deg;</div><div class="val">'+escH(d.curso)+' &middot; N&deg; '+escH(d.estInfo.num)+'</div></div>'
+    +'<div><div class="lbl">Fecha del acta</div><div class="val">'+escH(d.fechaDisp)+'</div></div>'
+    +'<div><div class="lbl">Docente responsable</div><div class="val">'+escH(d.docente)+'</div></div>'
+    +'<div><div class="lbl">Padre / Madre / Tutor</div><div class="val">'+escH(d.tutor)+'</div></div>'
+    +'<div><div class="lbl">Total faltas</div><div class="val" style="color:#e74c3c">'+d.faltas.length+'</div></div>'
+    +'</div>'
+    +(d.faltas.length?'<div class="sem">'
+    +'<div class="sb" style="background:#fff3e0;border:1px solid #f0a500;color:#e67e22"><div style="font-size:20px;font-weight:900">'+d.nL+'</div><div style="font-size:9px;font-weight:700">LEVES</div></div>'
+    +'<div class="sb" style="background:#fdecea;border:1px solid #e74c3c;color:#e74c3c"><div style="font-size:20px;font-weight:900">'+d.nG+'</div><div style="font-size:9px;font-weight:700">GRAVES</div></div>'
+    +'<div class="sb" style="background:#f3e5f5;border:1px solid #8e44ad;color:#8e44ad"><div style="font-size:20px;font-weight:900">'+d.nMG+'</div><div style="font-size:9px;font-weight:700">MUY GRAVES</div></div>'
+    +'</div>':'')
+    +'<div class="sec">Antecedentes disciplinarios</div>'
+    +tablaFaltas
+    +'<div class="sec">Descripci&oacute;n de los hechos</div>'
+    +'<p style="line-height:1.7;margin:0;text-align:justify">'+hechosHtml+'</p>'
+    +'<div class="sec">Compromisos asumidos</div>'
+    +'<p style="line-height:1.9;margin:0;white-space:pre-line">'+comprHtml+'</p>'
+    +obsBloque
+    +seguimientoBloque
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:36px;">'
+    +'<div style="text-align:center"><div style="border-top:1px solid #333;margin-top:32px;padding-top:4px;font-size:9px;color:#555"><strong>'+escH(d.docente)+'</strong><br>Docente / Tutor</div></div>'
+    +'<div style="text-align:center"><div style="border-top:1px solid #333;margin-top:32px;padding-top:4px;font-size:9px;color:#555"><strong>'+escH(d.nombre.split(',')[0])+'</strong><br>Estudiante</div></div>'
+    +'<div style="text-align:center"><div style="border-top:1px solid #333;margin-top:32px;padding-top:4px;font-size:9px;color:#555"><strong>'+(d.tutor!=='___________________________'?escH(d.tutor):'Padre / Madre / Tutor')+'</strong><br>Representante familiar</div></div>'
+    +'</div>'
+    +'<div style="font-size:8px;color:#aaa;text-align:right;margin-top:10px">Generado: '+new Date().toLocaleString('es-BO')+' &middot; Sistema Disciplinario NSP 2026</div>'
+    +'</div></body></html>';
+  var w = window.open('','_blank','width=880,height=720');
+  if (!w) { showToast('Permite ventanas emergentes en Chrome', true); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(function(){ w.print(); }, 700);
+}
+
+function actaCopiarWA() {
+  var d = _actaDatos();
+  var linFaltas = d.faltas.length
+    ? d.faltas.map(function(r){
+        var tipo = r[3]==='L'?'⚠️ Leve':r[3]==='G'?'🔴 Grave':'🚨 Muy grave';
+        return '  '+tipo+': '+(r[4]||'')+(r[0]?' ('+r[0]+')':'');
+      }).join('\n')
+    : '  (sin faltas previas en sistema)';
+  var comprLines = d.compromisos ? '\n\n*✅ Compromisos asumidos:*\n'+d.compromisos : '';
+  var segLine = d.seguimiento ? '\n\n📅 *Seguimiento:* '+d.seguimiento : '';
+  var obsLine = d.obs ? '\n\n📝 *Observaciones:* '+d.obs : '';
+  var msg = '🏫 *U.E. Marista "Nuestra Señora del Pilar" — NSP 2026*\n'
+    +'━━━━━━━━━━━━━━━━━━━━━━━\n'
+    +'📋 *ACTA DE COMPROMISO DISCIPLINARIO*\n\n'
+    +'👤 *Estudiante:* '+d.nombre+'\n'
+    +'📚 *Curso:* '+d.curso+'\n'
+    +'📅 *Fecha:* '+d.fechaDisp+'\n'
+    +'👨‍🏫 *Docente:* '+d.docente+'\n'
+    +'👨‍👩‍👧 *Tutor presente:* '+d.tutor+'\n\n'
+    +(d.faltas.length ? '*Faltas registradas ('+d.faltas.length+'):*\n'+linFaltas+'\n\n' : '')
+    +'*📝 Descripción de los hechos:*\n'+d.hechos
+    +comprLines
+    +obsLine
+    +segLine
+    +'\n\n_Solicitamos su firma de conocimiento en el Acta física que se enviará con el estudiante._\n'
+    +'_Sistema Disciplinario NSP 2026_';
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(msg).then(function(){
+      showToast('📋 Texto copiado para WhatsApp');
+    }).catch(function(){
+      _actaFallbackCopy(msg);
+    });
+  } else {
+    _actaFallbackCopy(msg);
+  }
+}
+
+function _actaFallbackCopy(txt) {
+  var ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('📋 Texto copiado para WhatsApp');
+  } catch(e) {
+    showToast('No se pudo copiar automáticamente', true);
+  }
+  document.body.removeChild(ta);
+}
+
+// Cerrar acta con Escape
+document.addEventListener('keydown', function(e){
+  if ((e.key==='Escape') && document.getElementById('acta-ov').classList.contains('on')) {
+    actaCerrar();
+  }
+});
+document.getElementById('acta-ov').addEventListener('click', function(e){
+  if (e.target === this) actaCerrar();
+});
+
+
 
 
 // TOAST
@@ -886,6 +1250,16 @@ function rqRegistrar(tipo, sub) {
       '</div>'+
       '<div style="color:#7A9CC0;font-size:.78rem;margin-bottom:10px;">Art. '+sub.a+' — elige el motivo:</div>'+
       btns+
+      '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">'+
+        '<input id="_rq_otro" type="text" placeholder="✏️ Otro motivo (escribe aquí)..."'+
+          ' style="flex:1;background:#0d1b2e;border:2px solid #2A4A70;border-radius:10px;color:#e8f0ff;'+
+          'padding:10px 14px;font-size:.9rem;font-family:\'Nunito\',sans-serif;outline:none;"'+
+          ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();_rqElegirOtro(\''+sub.c.replace(/'/g,"\\'")+'\',\''+tipo+'\',\''+sub.t.replace(/'/g,"\\'")+'\',\''+sub.a+'\');}"'+
+          ' onfocus="this.style.borderColor=\'#FFD700\'" onblur="this.style.borderColor=\'#2A4A70\'">'+
+        '<button onclick="_rqElegirOtro(\''+sub.c.replace(/'/g,"\\'")+'\',\''+tipo+'\',\''+sub.t.replace(/'/g,"\\'")+'\',\''+sub.a+'\')" style="background:#1e3a5f;border:2px solid rgba(255,215,0,.4);'+
+          'color:#FFD700;border-radius:10px;padding:10px 14px;font-family:\'Bebas Neue\';font-size:.9rem;'+
+          'letter-spacing:1px;cursor:pointer;white-space:nowrap;">OK</button>'+
+      '</div>'+
       '<button onclick="document.getElementById(\'_rqmov\').remove()" style="display:block;width:100%;background:transparent;border:2px solid #2A4A70;border-radius:10px;color:#7A9CC0;padding:11px;margin-top:4px;cursor:pointer;font-size:.9rem;">✕ Cancelar</button>'+
     '</div>';
     document.body.appendChild(ov);
@@ -900,6 +1274,14 @@ function _rqElegir(cod, tipo, desc, art, sub) {
   // cod tiene formato "L-4_2", guardamos el código base
   var codBase = cod.split('_')[0];
   rqToggle(codBase, tipo, desc, art);
+}
+function _rqElegirOtro(cod, tipo, tit, art) {
+  var inp = document.getElementById('_rq_otro');
+  if (!inp) return;
+  var val = inp.value.trim();
+  if (!val) { inp.focus(); return; }
+  var ov = document.getElementById('_rqmov'); if(ov) ov.remove();
+  rqToggle(cod, tipo, tit + ' - ' + val, art);
 }
 
 function rqToggle(cod, tipo, desc, art) {
