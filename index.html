@@ -1008,12 +1008,17 @@ function actaGenerarPDF() {
   var filas = d.faltas.map(function(r){
     var col = r[3]==='L'?'#e67e22':r[3]==='G'?'#e74c3c':'#8e44ad';
     var tipo = r[3]==='L'?'LEVE':r[3]==='G'?'GRAVE':'MUY GRAVE';
+    // Mostrar solo la fecha sin hora
+    var fechaRaw = r[0]||'—';
+    var fechaSolo = fechaRaw.includes(',') ? fechaRaw.split(',')[0] : fechaRaw.split(' ')[0];
+    // Docente: usar el del registro (r[6]) si existe, si no el del acta
+    var docenteFila = (r[6] && r[6].trim()) ? r[6] : (d.docente||'—');
     return '<tr>'
-      +'<td style="padding:4px 6px;font-size:10px;color:#555">'+escH(r[0]||'—')+'</td>'
+      +'<td style="padding:4px 6px;font-size:10px;color:#555">'+escH(fechaSolo)+'</td>'
       +'<td><span style="background:'+col+'22;color:'+col+';padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700">'+tipo+'</span></td>'
       +'<td style="font-size:10px;font-weight:700;color:'+col+'">'+escH(r[4]||'—')+'</td>'
       +'<td style="font-size:10px;color:#333">'+escH(r[5]||'—')+'</td>'
-      +'<td style="font-size:10px;color:#777">'+escH(r[6]||'—')+'</td>'
+      +'<td style="font-size:10px;color:#777">'+escH(docenteFila)+'</td>'
       +'</tr>';
   }).join('');
   var tablaFaltas = d.faltas.length
@@ -1041,7 +1046,7 @@ function actaGenerarPDF() {
     +'<title>Acta &mdash; '+escH(d.nombre)+'</title>'
     +'<style>@page{margin:1.5cm}body{font-family:Arial,sans-serif;color:#222;margin:0;font-size:11px}'
     +'.hdr{background:#1e3a5f;color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}'
-    +'.logo{font-size:18px;font-weight:900;color:#FFD700;letter-spacing:2px}'
+    +'.logo{font-size:18px;font-weight:900;color:#FFD700;letter-spacing:2px;opacity:.55}'
     +'.sec{font-size:10px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #1e3a5f;padding-bottom:3px;margin:14px 0 6px}'
     +'.ficha{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:10px 14px;margin-top:10px}'
     +'.lbl{font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px}.val{font-size:12px;font-weight:700;color:#1e3a5f}'
@@ -1491,11 +1496,14 @@ function generarPDFCurso(){
     var filas=f.map(function(r){
       var col=r[3]==='L'?'#e67e22':r[3]==='G'?'#e74c3c':'#8e44ad';
       var tipo=r[3]==='L'?'LEVE':r[3]==='G'?'GRAVE':'MUY GRAVE';
-      return'<tr><td style="padding:4px 6px;font-size:10px;color:#555">'+(r[0]||'—')+'</td>'
+      var fechaRaw=r[0]||'—';
+      var fechaSolo=fechaRaw.includes(',')?fechaRaw.split(',')[0]:fechaRaw.split(' ')[0];
+      var docenteFila=(r[6]&&r[6].trim())?r[6]:'—';
+      return'<tr><td style="padding:4px 6px;font-size:10px;color:#555">'+fechaSolo+'</td>'
         +'<td><span style="background:'+col+'22;color:'+col+';padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700">'+tipo+'</span></td>'
         +'<td style="font-size:10px;font-weight:700;color:'+col+'">'+(r[4]||'—')+'</td>'
         +'<td style="font-size:10px;color:#333">'+getArt(r[4])+'</td>'
-        +'<td style="font-size:10px;color:#777">'+(r[6]||'—')+'</td></tr>';
+        +'<td style="font-size:10px;color:#777">'+docenteFila+'</td></tr>';
     }).join('');
     return'<div style="page-break-after:always;padding:15px 20px;">'
       +'<div style="background:#1e3a5f;color:#fff;padding:10px 14px;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;">'
