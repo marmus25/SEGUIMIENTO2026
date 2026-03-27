@@ -643,26 +643,75 @@ function actualizarEstadoRed(){
   }
 }
 
+// ── SINCRONIZACIÓN OFFLINE: envío en LOTE (batch) ──────────────────
 async function sincronizarOffline(){
   if(!offlineQ.length)return;
-  const q=[...offlineQ];
-  let ok=0;
-  for(const p of q){
-    try{
-      await fetch(SU,{method:'POST',body:JSON.stringify(p)});
-      const i=offlineQ.findIndex(x=>JSON.stringify(x)===JSON.stringify(p));
-      if(i>=0)offlineQ.splice(i,1);
-      ok++;
-    }catch(err){break;}
-  }
-  guardarOfflineQ();
-  actualizarEstadoRed();
-  if(ok>0)showToast('☁️ '+ok+' registro'+(ok>1?'s':'')+' sincronizado'+(ok>1?'s':'')+' con Sheets');
+  try{
+    const res=await fetch(SU,{method:'POST',body:JSON.stringify({action:'batch',registros:offlineQ})});
+    if(res.ok){
+      const n=offlineQ.length;
+      offlineQ=[];
+      guardarOfflineQ();
+      actualizarEstadoRed();
+      showToast('☁️ '+n+' registro'+(n>1?'s':'')+' sincronizado'+(n>1?'s':'')+' con Sheets');
+    }
+  }catch(err){}
+}
+
+// ── CARGA AUTOMÁTICA de datos compartidos al inicio ─────────────────
+let _autoReloadTimer=null;
+async function cargarDatosCompartidos(silencioso){
+  if(!navigator.onLine)return;
+  try{
+    const res=await fetch(SU+'?t='+Date.now()),json=await res.json();
+    // Infracciones
+    const esEncabezado=r=>{const v=(r[0]||'').toString().toLowerCase().trim();return v==='fecha'||v==='fecha/hora'||v==='timestamp'||v===''||v==='fecha hora';};
+    const data=(json.data||[]).filter(r=>Array.isArray(r)&&r.length>=4&&!esEncabezado(r)).map(r=>r.map(c=>typeof c==='string'?c.trim():c)).filter(r=>{const t=(r[3]||'').toString().trim();return t==='L'||t==='G'||t==='MG';});
+    regsG=data;
+    // Retirados compartidos desde GAS
+    if(Array.isArray(json.ret)){
+      ret=json.ret;
+      try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}
+    }
+    renderCursos();
+    // Actualizar panel si está abierto
+    const panelAbierto=document.getElementById('sp')&&document.getElementById('sp').classList.contains('on');
+    if(panelAbierto)_renderPanel(data);
+    if(!silencioso)showToast('✅ Datos actualizados');
+  }catch(e){}
+}
+
+function _renderPanel(data){
+  document.getElementById('pt').textContent=data.length;
+  document.getElementById('pl').textContent=data.filter(r=>r[3]==='L').length;
+  document.getElementById('pg').textContent=data.filter(r=>r[3]==='G').length;
+  document.getElementById('pm').textContent=data.filter(r=>r[3]==='MG').length;
+  if(!data.length){document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Sin registros</td></tr>';return;}
+  document.getElementById('ptbody').innerHTML=[...data].reverse().map((r,i)=>{
+    const idx=data.length-1-i,col=r[3]==='L'?'var(--leve)':r[3]==='G'?'var(--grave)':'var(--rojo)';
+    const nom=encodeURIComponent(r[2]||''),cur=encodeURIComponent(r[1]||'');
+    return'<tr>'
+      +'<td style="color:var(--muted);font-size:.7rem;white-space:nowrap">'+(r[0]||'')+'</td>'
+      +'<td><strong>'+(r[1]||'')+'</strong></td>'
+      +'<td style="font-size:.74rem">'+(r[2]||'')+'</td>'
+      +'<td><span class="tt" style="background:'+col+'22;color:'+col+'">'+(r[3]==='L'?'LEVE':r[3]==='G'?'GRAVE':'MUY GRAVE')+'</span><br><small style="color:var(--muted)">'+(r[4]||'')+'</small></td>'
+      +'<td style="font-size:.7rem">'+(r[5]||'')+'</td>'
+      +'<td style="color:var(--muted);font-size:.7rem">'+(r[6]||'')+'</td>'
+      +'<td style="display:flex;gap:3px;">'
+      +'<button onclick="generarPDF(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:var(--accent);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Informe PDF">📄</button>'
+      +'<button onclick="abrirActa(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(46,117,182,.15);border:1px solid rgba(46,117,182,.35);color:var(--lblue);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Acta de compromiso">📋</button>'
+      +'<button onclick="elimReg('+idx+')" style="background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.3);color:var(--rojo);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Eliminar">✕</button>'
+      +'</td></tr>';
+  }).join('');
 }
 
 window.addEventListener('online',actualizarEstadoRed);
 window.addEventListener('offline',actualizarEstadoRed);
+// Sincroniza offline cada 30s, y recarga datos compartidos cada 60s
 setInterval(()=>{if(navigator.onLine&&offlineQ.length)sincronizarOffline();},30000);
+setInterval(()=>{if(navigator.onLine)cargarDatosCompartidos(true);},60000);
+// Carga inicial al arrancar
+cargarDatosCompartidos(true);
 
 // RELOJ
 function tick(){
@@ -943,15 +992,21 @@ async function enviar(doc){
   pend.forEach(p=>{p[6]=doc;regsG.push(p);});
   pend=[];actualizarBadge();renderCursos();
   if(navigator.onLine){
-    let enviados=0;
-    for(const p of payload){
-      try{await fetch(SU,{method:'POST',body:JSON.stringify(p)});enviados++;}
-      catch(e){offlineQ.push(p);}
+    try{
+      // BATCH: una sola llamada para todas las infracciones
+      const res=await fetch(SU,{method:'POST',body:JSON.stringify({action:'batch',registros:payload})});
+      if(res.ok){
+        document.getElementById('oks').textContent=total+' enviado'+(total!==1?'s':'')+' · '+doc;
+        // Recargar datos frescos para todos
+        setTimeout(()=>cargarDatosCompartidos(true),1500);
+      } else {
+        payload.forEach(p=>offlineQ.push(p));guardarOfflineQ();
+        document.getElementById('oks').textContent=total+' guardado'+(total!==1?'s':'')+' offline · '+doc;
+      }
+    }catch(e){
+      payload.forEach(p=>offlineQ.push(p));guardarOfflineQ();actualizarEstadoRed();
+      document.getElementById('oks').textContent='📴 '+total+' guardado'+(total!==1?'s':'')+' offline · se enviarán al reconectarse';
     }
-    guardarOfflineQ();
-    const enQ=payload.length-enviados;
-    const msg=enviados+' enviado'+(enviados!==1?'s':'')+(enQ?' · '+enQ+' guardado'+(enQ>1?'s':'')+' offline':'');
-    document.getElementById('oks').textContent=msg+' · '+doc;
   } else {
     payload.forEach(p=>offlineQ.push(p));
     guardarOfflineQ();
@@ -973,40 +1028,30 @@ function confirmarRet(){
   if(retEst.accion==='ret'){if(!ret.includes(retEst.id))ret.push(retEst.id);}
   else ret=ret.filter(r=>r!==retEst.id);
   try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}
+  // Guardar en GAS para compartir entre usuarios
+  if(navigator.onLine){
+    fetch(SU,{method:'POST',body:JSON.stringify({action:'setRet',ret:ret})}).catch(()=>{});
+  }
   document.getElementById('mov').classList.remove('on');
   renderEst(document.getElementById('buscar').value);
 }
 
 // PANEL
-function abrirPanel(){cargarPanel();goto('sp');}
+function abrirPanel(){
+  document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">⏳ Cargando...</td></tr>';
+  goto('sp');
+  cargarPanel();
+}
 async function cargarPanel(){
   document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">⏳ Cargando...</td></tr>';
   try{
     const res=await fetch(SU+'?t='+Date.now()),json=await res.json();
     const esEncabezado=r=>{const v=(r[0]||'').toString().toLowerCase().trim();return v==='fecha'||v==='fecha/hora'||v==='timestamp'||v===''||v==='fecha hora';};
     const data=(json.data||[]).filter(r=>Array.isArray(r)&&r.length>=4&&!esEncabezado(r)).map(r=>r.map(c=>typeof c==='string'?c.trim():c)).filter(r=>{const t=(r[3]||'').toString().trim();return t==='L'||t==='G'||t==='MG';});
-    regsG=data;renderCursos();
-    document.getElementById('pt').textContent=data.length;
-    document.getElementById('pl').textContent=data.filter(r=>r[3]==='L').length;
-    document.getElementById('pg').textContent=data.filter(r=>r[3]==='G').length;
-    document.getElementById('pm').textContent=data.filter(r=>r[3]==='MG').length;
-    if(!data.length){document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Sin registros</td></tr>';return;}
-    document.getElementById('ptbody').innerHTML=[...data].reverse().map((r,i)=>{
-      const idx=data.length-1-i,col=r[3]==='L'?'var(--leve)':r[3]==='G'?'var(--grave)':'var(--rojo)';
-      const nom=encodeURIComponent(r[2]||''),cur=encodeURIComponent(r[1]||'');
-      return'<tr>'
-        +'<td style="color:var(--muted);font-size:.7rem;white-space:nowrap">'+(r[0]||'')+'</td>'
-        +'<td><strong>'+(r[1]||'')+'</strong></td>'
-        +'<td style="font-size:.74rem">'+(r[2]||'')+'</td>'
-        +'<td><span class="tt" style="background:'+col+'22;color:'+col+'">'+(r[3]==='L'?'LEVE':r[3]==='G'?'GRAVE':'MUY GRAVE')+'</span><br><small style="color:var(--muted)">'+(r[4]||'')+'</small></td>'
-        +'<td style="font-size:.7rem">'+(r[5]||'')+'</td>'
-        +'<td style="color:var(--muted);font-size:.7rem">'+(r[6]||'')+'</td>'
-        +'<td style="display:flex;gap:3px;">'
-        +'<button onclick="generarPDF(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:var(--accent);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Informe PDF">📄</button>'
-        +'<button onclick="abrirActa(decodeURIComponent(\''+nom+'\'),decodeURIComponent(\''+cur+'\'))" style="background:rgba(46,117,182,.15);border:1px solid rgba(46,117,182,.35);color:var(--lblue);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Acta de compromiso">📋</button>'
-        +'<button onclick="elimReg('+idx+')" style="background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.3);color:var(--rojo);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:.7rem;" title="Eliminar">✕</button>'
-        +'</td></tr>';
-    }).join('');
+    regsG=data;
+    if(Array.isArray(json.ret)){ret=json.ret;try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}}
+    renderCursos();
+    _renderPanel(data);
   }catch(e){document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--rojo)">⚠️ Sin conexión</td></tr>';}
 }
 function elimReg(idx){
@@ -1759,24 +1804,32 @@ async function rqGuardar() {
   var btn = document.getElementById('rq-btn-guardar');
   btn.disabled = true; btn.textContent = '⏳ Guardando...';
   document.getElementById('rq-estado').textContent = 'Enviando '+RQ.seleccionados.length+' falta(s)...';
-  var ok=0, err=0;
-  for (var i=0; i<RQ.seleccionados.length; i++) {
-    var f = RQ.seleccionados[i];
-    try {
-      var r = await fetch(SU, {
-        method:'POST',
-        body: JSON.stringify({
-          curso:cid, estId:est.id, nombre:est.nombre,
-          tipo:f.tipo, codigo:f.codigo, descripcion:f.descripcion,
-          articulo:f.articulo, fecha:fechaFmt,
-          docente:docente, origen:'registro-rapido'
-        })
-      });
-      if (r.ok) ok++; else err++;
-    } catch(e) { err++; }
+  // BATCH: una sola llamada para todas las faltas del registro rápido
+  var registros = RQ.seleccionados.map(function(f){
+    return {
+      curso:cid, estId:est.id, nombre:est.nombre,
+      tipo:f.tipo, codigo:f.codigo, descripcion:f.descripcion,
+      articulo:f.articulo, fecha:fechaFmt,
+      docente:docente, origen:'registro-rapido'
+    };
+  });
+  try {
+    var r = await fetch(SU, {method:'POST', body: JSON.stringify({action:'batch', registros:registros})});
+    if (r.ok) {
+      document.getElementById('rq-estado').textContent = '✓ '+registros.length+' falta(s) guardadas';
+      showToast(registros.length+' falta(s) guardadas ✓');
+      setTimeout(()=>cargarDatosCompartidos(true), 1500);
+    } else {
+      document.getElementById('rq-estado').textContent = '⚠️ Error al guardar';
+      showToast('Error al guardar', true);
+    }
+  } catch(e) {
+    // Sin conexión: guardar en cola offline
+    registros.forEach(function(p){offlineQ.push(p);});
+    guardarOfflineQ(); actualizarEstadoRed();
+    document.getElementById('rq-estado').textContent = '📴 '+registros.length+' guardadas offline';
+    showToast('Sin conexión — guardadas offline');
   }
-  document.getElementById('rq-estado').textContent = '✓ '+ok+' falta(s) guardadas'+(err?' — '+err+' error(es)':'');
-  showToast(ok+' falta(s) guardadas ✓');
   btn.textContent = '✅ GUARDAR FALTAS'; btn.disabled = false;
   setTimeout(function() {
     rqLimpiar();
