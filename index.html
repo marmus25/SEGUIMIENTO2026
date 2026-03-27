@@ -584,8 +584,88 @@ textarea.acta-input{resize:vertical;min-height:68px;line-height:1.5;}
 <div class="toast" id="toast"></div>
 <div class="hint">&#8593;&#8595; Navegar &nbsp;&#9646; OK &nbsp;&#8592; Volver</div>
 
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, get, onValue, remove, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDY38P6IayArQ_ebMsmCweoDXwyBZ7hbRY",
+  authDomain: "disciplina-nsp-2026.firebaseapp.com",
+  databaseURL: "https://disciplina-nsp-2026-default-rtdb.firebaseio.com",
+  projectId: "disciplina-nsp-2026",
+  storageBucket: "disciplina-nsp-2026.firebasestorage.app",
+  messagingSenderId: "774148664161",
+  appId: "1:774148664161:web:30d243b2656f0a0d693320"
+};
+const _app = initializeApp(firebaseConfig);
+const _db = getDatabase(_app);
+window._FB = { db:_db, ref, push, set, get, onValue, remove, child };
+</script>
+
 <script>
-const SU='https://script.google.com/macros/s/AKfycbyxk4Hep6unkszMFEH6Zuv5Pn3Oin1OS5DwtnUe2K2g-QBBCwLKNqO5pqcNcU5hshl7/exec';
+// ── FIREBASE HELPERS (reemplazan al GAS) ────────────────────────────
+const FB = ()=>window._FB; // acceso seguro
+
+async function fbGuardarRegistro(p){
+  const {db,ref,push}=FB();
+  const fecha = p.fecha || new Date().toLocaleDateString('es-BO');
+  await push(ref(db,'infracciones'),{
+    fecha, curso:p.curso, estudiante:p.estudiante||p.nombre||'',
+    tipo:p.tipo, codigo:p.codigo, descripcion:p.descripcion||'',
+    docente:p.docente||'', ts:Date.now()
+  });
+}
+
+async function fbGuardarBatch(registros){
+  for(const p of registros) await fbGuardarRegistro(p);
+}
+
+async function fbCargarDatos(){
+  const {db,ref,get}=FB();
+  const snap = await get(ref(db,'infracciones'));
+  const data=[];
+  if(snap.exists()){
+    snap.forEach(c=>{
+      const r=c.val();
+      data.push([r.fecha,r.curso,r.estudiante,r.tipo,r.codigo,r.descripcion,r.docente,c.key]);
+    });
+  }
+  return data;
+}
+
+async function fbEliminarRegistro(key){
+  const {db,ref,remove}=FB();
+  await remove(ref(db,'infracciones/'+key));
+}
+
+async function fbGuardarRet(retArr){
+  const {db,ref,set}=FB();
+  await set(ref(db,'config/ret'), retArr);
+}
+
+async function fbCargarRet(){
+  const {db,ref,get}=FB();
+  const snap=await get(ref(db,'config/ret'));
+  return snap.exists()?snap.val():[];
+}
+
+// Escucha cambios en tiempo real — actualiza la app al instante para todos
+function fbEscucharCambios(){
+  const {db,ref,onValue}=FB();
+  onValue(ref(db,'infracciones'),async snap=>{
+    const data=[];
+    if(snap.exists()) snap.forEach(c=>{const r=c.val();data.push([r.fecha,r.curso,r.estudiante,r.tipo,r.codigo,r.descripcion,r.docente,c.key]);});
+    regsG=data;
+    renderCursos();
+    const panelAbierto=document.getElementById('sp')&&document.getElementById('sp').classList.contains('on');
+    if(panelAbierto)_renderPanel(data);
+  });
+  onValue(ref(db,'config/ret'),snap=>{
+    if(snap.exists()){ret=snap.val();try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}}
+  });
+}
+
 const CURSOS=[{id:'1A',n:'1ro "A"'},{id:'1B',n:'1ro "B"'},{id:'1C',n:'1ro "C"'},{id:'2A',n:'2do "A"'},{id:'2B',n:'2do "B"'},{id:'2C',n:'2do "C"'},{id:'3A',n:'3ro "A"'},{id:'3B',n:'3ro "B"'},{id:'3C',n:'3ro "C"'},{id:'4A',n:'4to "A"'},{id:'4B',n:'4to "B"'},{id:'4C',n:'4to "C"'},{id:'5A',n:'5to "A"'},{id:'5B',n:'5to "B"'},{id:'5C',n:'5to "C"'},{id:'6A',n:'6to "A"'},{id:'6B',n:'6to "B"'},{id:'6C',n:'6to "C"'}];
 const DOCS=[{a:'Música',n:'Prof. Marcelo'},{a:'Biología',n:'Prof. Beatriz'},{a:'Biología',n:'Prof. Mónica'},{a:'Biología',n:'Prof. Leydi'},{a:'Física',n:'Prof. Victor Quiroz'},{a:'Química',n:'Prof. Victor Paricagua'},{a:'Lenguaje',n:'Prof. Anai'},{a:'Lenguaje',n:'Prof. Liliana B.'},{a:'Inglés',n:'Prof. Jhannet'},{a:'Cs. Sociales',n:'Prof. Ronald'},{a:'Cs. Sociales',n:'Prof. Mirian Aguilar'},{a:'Cs. Sociales',n:'Prof. Mirian Orellana'},{a:'Cs. Sociales',n:'Prof. Mirian Taquichiri'},{a:'Ed. Física',n:'Prof. Victor Quispe'},{a:'Ed. Física',n:'Prof. Isaac Jiménez'},{a:'Artes',n:'Prof. Magali'},{a:'Artes',n:'Prof. Valentina Colque'},{a:'Psicología',n:'Prof. Aida Arauco'},{a:'Filosofía',n:'Prof. Dubeysa Arévalo'},{a:'Valores',n:'Prof. Victor Mamani'},{a:'Valores',n:'Prof. Roxana Araoz'},{a:'Matemáticas',n:'Prof. Eddy Osinaga'},{a:'Matemáticas',n:'Prof. Juan Aguilar'},{a:'Matemáticas',n:'Prof. Jorge C.'},{a:'Matemáticas',n:'Prof. Lourdes Gutiérrez'},{a:'Matemáticas',n:'Prof. Roy'},{a:'Música',n:'Prof. Olga Chambi'},{a:'Tecnología',n:'Prof. Silvio Pacheco'},{a:'Comunicación',n:'Prof. Rosemary'}];
 const INF={L:[
@@ -643,38 +723,29 @@ function actualizarEstadoRed(){
   }
 }
 
-// ── SINCRONIZACIÓN OFFLINE: envío en LOTE (batch) ──────────────────
+// ── SINCRONIZACIÓN OFFLINE: envío en LOTE via Firebase ──────────────
 async function sincronizarOffline(){
   if(!offlineQ.length)return;
   try{
-    const res=await fetch(SU,{method:'POST',body:JSON.stringify({action:'batch',registros:offlineQ})});
-    if(res.ok){
-      const n=offlineQ.length;
-      offlineQ=[];
-      guardarOfflineQ();
-      actualizarEstadoRed();
-      showToast('☁️ '+n+' registro'+(n>1?'s':'')+' sincronizado'+(n>1?'s':'')+' con Sheets');
-    }
+    await fbGuardarBatch(offlineQ);
+    const n=offlineQ.length;
+    offlineQ=[];
+    guardarOfflineQ();
+    actualizarEstadoRed();
+    showToast('☁️ '+n+' registro'+(n>1?'s':'')+' sincronizado'+(n>1?'s':'')+' con Firebase');
   }catch(err){}
 }
 
-// ── CARGA AUTOMÁTICA de datos compartidos al inicio ─────────────────
-let _autoReloadTimer=null;
+// ── CARGA AUTOMÁTICA via Firebase ───────────────────────────────────
 async function cargarDatosCompartidos(silencioso){
   if(!navigator.onLine)return;
   try{
-    const res=await fetch(SU+'?t='+Date.now()),json=await res.json();
-    // Infracciones
-    const esEncabezado=r=>{const v=(r[0]||'').toString().toLowerCase().trim();return v==='fecha'||v==='fecha/hora'||v==='timestamp'||v===''||v==='fecha hora';};
-    const data=(json.data||[]).filter(r=>Array.isArray(r)&&r.length>=4&&!esEncabezado(r)).map(r=>r.map(c=>typeof c==='string'?c.trim():c)).filter(r=>{const t=(r[3]||'').toString().trim();return t==='L'||t==='G'||t==='MG';});
+    const data = await fbCargarDatos();
+    const retData = await fbCargarRet();
     regsG=data;
-    // Retirados compartidos desde GAS
-    if(Array.isArray(json.ret)){
-      ret=json.ret;
-      try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}
-    }
+    ret=retData;
+    try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}
     renderCursos();
-    // Actualizar panel si está abierto
     const panelAbierto=document.getElementById('sp')&&document.getElementById('sp').classList.contains('on');
     if(panelAbierto)_renderPanel(data);
     if(!silencioso)showToast('✅ Datos actualizados');
@@ -707,11 +778,17 @@ function _renderPanel(data){
 
 window.addEventListener('online',actualizarEstadoRed);
 window.addEventListener('offline',actualizarEstadoRed);
-// Sincroniza offline cada 30s, y recarga datos compartidos cada 60s
+// Sincroniza offline cada 30s
 setInterval(()=>{if(navigator.onLine&&offlineQ.length)sincronizarOffline();},30000);
-setInterval(()=>{if(navigator.onLine)cargarDatosCompartidos(true);},60000);
-// Carga inicial al arrancar
-cargarDatosCompartidos(true);
+// Iniciar escucha en tiempo real de Firebase (actualiza a todos instantáneamente)
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(window._FB){fbEscucharCambios();}
+    else{// fallback: cargar una vez
+      cargarDatosCompartidos(true);
+    }
+  },800);
+});
 
 // RELOJ
 function tick(){
@@ -991,26 +1068,17 @@ async function enviar(doc){
   const payload=pend.map(p=>({curso:p[1],estudiante:p[2]||'(sin nombre)',tipo:p[3],codigo:p[4],descripcion:p[5],docente:doc}));
   pend.forEach(p=>{p[6]=doc;regsG.push(p);});
   pend=[];actualizarBadge();renderCursos();
-  if(navigator.onLine){
+  if(navigator.onLine && window._FB){
     try{
-      // BATCH: una sola llamada para todas las infracciones
-      const res=await fetch(SU,{method:'POST',body:JSON.stringify({action:'batch',registros:payload})});
-      if(res.ok){
-        document.getElementById('oks').textContent=total+' enviado'+(total!==1?'s':'')+' · '+doc;
-        // Recargar datos frescos para todos
-        setTimeout(()=>cargarDatosCompartidos(true),1500);
-      } else {
-        payload.forEach(p=>offlineQ.push(p));guardarOfflineQ();
-        document.getElementById('oks').textContent=total+' guardado'+(total!==1?'s':'')+' offline · '+doc;
-      }
+      await fbGuardarBatch(payload);
+      document.getElementById('oks').textContent=total+' enviado'+(total!==1?'s':'')+' · '+doc;
     }catch(e){
       payload.forEach(p=>offlineQ.push(p));guardarOfflineQ();actualizarEstadoRed();
       document.getElementById('oks').textContent='📴 '+total+' guardado'+(total!==1?'s':'')+' offline · se enviarán al reconectarse';
     }
   } else {
     payload.forEach(p=>offlineQ.push(p));
-    guardarOfflineQ();
-    actualizarEstadoRed();
+    guardarOfflineQ();actualizarEstadoRed();
     document.getElementById('oks').textContent='📴 '+total+' guardado'+(total!==1?'s':'')+' offline · se enviarán al reconectarse';
   }
   goto('sok');
@@ -1028,10 +1096,8 @@ function confirmarRet(){
   if(retEst.accion==='ret'){if(!ret.includes(retEst.id))ret.push(retEst.id);}
   else ret=ret.filter(r=>r!==retEst.id);
   try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}
-  // Guardar en GAS para compartir entre usuarios
-  if(navigator.onLine){
-    fetch(SU,{method:'POST',body:JSON.stringify({action:'setRet',ret:ret})}).catch(()=>{});
-  }
+  // Guardar en Firebase para compartir entre usuarios
+  if(navigator.onLine && window._FB) fbGuardarRet(ret).catch(()=>{});
   document.getElementById('mov').classList.remove('on');
   renderEst(document.getElementById('buscar').value);
 }
@@ -1045,11 +1111,11 @@ function abrirPanel(){
 async function cargarPanel(){
   document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">⏳ Cargando...</td></tr>';
   try{
-    const res=await fetch(SU+'?t='+Date.now()),json=await res.json();
-    const esEncabezado=r=>{const v=(r[0]||'').toString().toLowerCase().trim();return v==='fecha'||v==='fecha/hora'||v==='timestamp'||v===''||v==='fecha hora';};
-    const data=(json.data||[]).filter(r=>Array.isArray(r)&&r.length>=4&&!esEncabezado(r)).map(r=>r.map(c=>typeof c==='string'?c.trim():c)).filter(r=>{const t=(r[3]||'').toString().trim();return t==='L'||t==='G'||t==='MG';});
+    const data = await fbCargarDatos();
+    const retData = await fbCargarRet();
     regsG=data;
-    if(Array.isArray(json.ret)){ret=json.ret;try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}}
+    ret=retData;
+    try{localStorage.setItem('ret',JSON.stringify(ret));}catch(e){}
     renderCursos();
     _renderPanel(data);
   }catch(e){document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--rojo)">⚠️ Sin conexión</td></tr>';}
@@ -1057,13 +1123,13 @@ async function cargarPanel(){
 function elimReg(idx){
   const r=regsG[idx];if(!r)return;
   if(!confirm('¿Eliminar falta de '+r[2]+'?'))return;
-  fetch(SU,{method:'POST',body:JSON.stringify({action:'delete',curso:r[1],fecha:r[0],estudiante:r[2],codigo:r[4]})})
-    .then(function(res){return res.ok?res.json():Promise.reject(res.status);})
-    .then(function(){regsG.splice(idx,1);cargarPanel();showToast('🗑 Eliminado');})
-    .catch(function(e){
-      // Si falla CORS (archivo local) igual actualiza la vista local
-      regsG.splice(idx,1);cargarPanel();showToast('🗑 Eliminado localmente');
-    });
+  const key=r[7]; // Firebase key guardado en posición 7
+  if(key && window._FB){
+    fbEliminarRegistro(key)
+      .then(()=>{showToast('🗑 Eliminado');})
+      .catch(()=>{showToast('⚠️ Error al eliminar',true);});
+  }
+  regsG.splice(idx,1);_renderPanel(regsG);renderCursos();
 }
 
 
@@ -1804,27 +1870,24 @@ async function rqGuardar() {
   var btn = document.getElementById('rq-btn-guardar');
   btn.disabled = true; btn.textContent = '⏳ Guardando...';
   document.getElementById('rq-estado').textContent = 'Enviando '+RQ.seleccionados.length+' falta(s)...';
-  // BATCH: una sola llamada para todas las faltas del registro rápido
   var registros = RQ.seleccionados.map(function(f){
     return {
-      curso:cid, estId:est.id, nombre:est.nombre,
+      curso:cid, estudiante:est.nombre,
       tipo:f.tipo, codigo:f.codigo, descripcion:f.descripcion,
-      articulo:f.articulo, fecha:fechaFmt,
-      docente:docente, origen:'registro-rapido'
+      fecha:fechaFmt, docente:docente
     };
   });
-  try {
-    var r = await fetch(SU, {method:'POST', body: JSON.stringify({action:'batch', registros:registros})});
-    if (r.ok) {
+  if(navigator.onLine && window._FB){
+    fbGuardarBatch(registros).then(function(){
       document.getElementById('rq-estado').textContent = '✓ '+registros.length+' falta(s) guardadas';
       showToast(registros.length+' falta(s) guardadas ✓');
-      setTimeout(()=>cargarDatosCompartidos(true), 1500);
-    } else {
-      document.getElementById('rq-estado').textContent = '⚠️ Error al guardar';
-      showToast('Error al guardar', true);
-    }
-  } catch(e) {
-    // Sin conexión: guardar en cola offline
+    }).catch(function(){
+      registros.forEach(function(p){offlineQ.push(p);});
+      guardarOfflineQ(); actualizarEstadoRed();
+      document.getElementById('rq-estado').textContent = '📴 '+registros.length+' guardadas offline';
+      showToast('Sin conexión — guardadas offline');
+    });
+  } else {
     registros.forEach(function(p){offlineQ.push(p);});
     guardarOfflineQ(); actualizarEstadoRed();
     document.getElementById('rq-estado').textContent = '📴 '+registros.length+' guardadas offline';
@@ -1964,7 +2027,7 @@ function generarPDFCurso(){
   var c="self.addEventListener('install',function(){self.skipWaiting();});";
   c+="self.addEventListener('activate',function(){self.clients.claim();});";
   c+="self.addEventListener('fetch',function(e){";
-  c+="if(e.request.method!=='GET'||e.request.url.indexOf('script.google.com')>=0)return;";
+  c+="if(e.request.method!=='GET'||e.request.url.indexOf('firebaseio.com')>=0)return;";
   c+="e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request);}));});";
   try{navigator.serviceWorker.register(URL.createObjectURL(new Blob([c],{type:'text/javascript'})));}catch(x){}
 })();
