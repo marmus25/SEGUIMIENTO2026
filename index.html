@@ -463,6 +463,11 @@ textarea.acta-input{resize:vertical;min-height:68px;line-height:1.5;}
       <div class="stat stG"><div class="n" id="pg">0</div><div class="l">GRAVES</div></div>
       <div class="stat stMG"><div class="n" id="pm">0</div><div class="l">MUY GRAVES</div></div>
     </div>
+    <div style="padding:6px 10px 0;">
+      <select id="filtro-curso" onchange="_aplicarFiltro()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:.8rem;width:100%;font-family:inherit;">
+        <option value="">📋 Todos los cursos</option>
+      </select>
+    </div>
     <div class="tw">
       <table><thead><tr>
         <th>Fecha</th><th>Curso</th><th>Estudiante</th><th>Tipo</th><th>Infracción</th><th>Docente</th><th>&#128465;</th>
@@ -752,14 +757,45 @@ async function cargarDatosCompartidos(silencioso){
   }catch(e){}
 }
 
-function _renderPanel(data){
+function _aplicarFiltro(){
+  const sel=document.getElementById('filtro-curso');
+  const curso=sel?sel.value:'';
+  const data=curso?regsG.filter(r=>(r[1]||'')=== curso):regsG;
+  _renderTabla(data);
+  // Actualizar contadores según filtro
   document.getElementById('pt').textContent=data.length;
   document.getElementById('pl').textContent=data.filter(r=>r[3]==='L').length;
   document.getElementById('pg').textContent=data.filter(r=>r[3]==='G').length;
   document.getElementById('pm').textContent=data.filter(r=>r[3]==='MG').length;
+}
+
+function _renderPanel(data){
+  // Poblar selector de cursos
+  const sel=document.getElementById('filtro-curso');
+  if(sel){
+    const cursoActual=sel.value;
+    const cursos=[...new Set(data.map(r=>r[1]||'').filter(Boolean))].sort();
+    sel.innerHTML='<option value="">📋 Todos los cursos ('+data.length+')</option>';
+    cursos.forEach(c=>{
+      const n=data.filter(r=>r[1]===c).length;
+      const op=document.createElement('option');
+      op.value=c;op.textContent='📌 '+c+' ('+n+' faltas)';
+      if(c===cursoActual)op.selected=true;
+      sel.appendChild(op);
+    });
+  }
+  document.getElementById('pt').textContent=data.length;
+  document.getElementById('pl').textContent=data.filter(r=>r[3]==='L').length;
+  document.getElementById('pg').textContent=data.filter(r=>r[3]==='G').length;
+  document.getElementById('pm').textContent=data.filter(r=>r[3]==='MG').length;
+  _aplicarFiltro();
+}
+
+function _renderTabla(data){
   if(!data.length){document.getElementById('ptbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Sin registros</td></tr>';return;}
   document.getElementById('ptbody').innerHTML=[...data].reverse().map((r,i)=>{
-    const idx=data.length-1-i,col=r[3]==='L'?'var(--leve)':r[3]==='G'?'var(--grave)':'var(--rojo)';
+    const idx=regsG.indexOf(r);
+    const col=r[3]==='L'?'var(--leve)':r[3]==='G'?'var(--grave)':'var(--rojo)';
     const nom=encodeURIComponent(r[2]||''),cur=encodeURIComponent(r[1]||'');
     return'<tr>'
       +'<td style="color:var(--muted);font-size:.7rem;white-space:nowrap">'+(r[0]||'')+'</td>'
