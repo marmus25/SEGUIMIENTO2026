@@ -254,7 +254,7 @@ textarea.acta-input{resize:vertical;min-height:68px;line-height:1.5;}
 <!-- INICIO -->
 <div id="si" class="scr on">
   <div class="hdr">
-    <div><div class="logo">; NSP Disciplina 2026</div>
+    <div><div class="logo">&#127EB; NSP Disciplina 2026</div>
     <div class="sub">U.E. Marista Nuestra Señora del Pilar &mdash; Fe y Alegría</div></div>
     <div style="text-align:right">
       <div class="clock" id="clk0">--:--</div>
@@ -1397,8 +1397,14 @@ function _actaPrelllenar(faltas, estudiantes) {
     var artRef = nMG > 0 ? 'Art. 21 del Reglamento Interno y Art. 56 párr. III de la R.M. 0001/2026'
                 : nG > 0  ? 'Art. 20 del Reglamento Interno'
                 :           'Art. 19 del Reglamento Interno';
-    campoHechos.value = sujetoStr+' incurrió en la siguiente infracción: '+descTexto
-      +'. El hecho constituye una falta '+gravedadStr+' según el '+artRef+'.';
+    var esMultipleFalta = faltas.length > 1;
+    var fechaRef = esMultipleFalta ? 'En las fechas señaladas' : 'En la fecha señalada';
+    var conductaRef = esMultipleFalta ? 'presentó conductas catalogadas como faltas' : 'presentó una conducta catalogada como falta';
+    var articuloRef = esMultipleFalta ? 'conforme a los artículos referenciados del Reglamento Interno' : 'conforme al '+artRef;
+    var especRef = esMultipleFalta ? 'específicamente en: '+descTexto : 'específicamente: '+descTexto;
+    campoHechos.value = fechaRef+', '+sujetoStr.toLowerCase()+' '+conductaRef+' '+gravedadStr
+      +' '+articuloRef+', '+especRef
+      +'. La presente acta se emite con fines formativos y de seguimiento pedagógico, en el marco del proceso de acompañamiento disciplinario de la institución.';
   }
 
   // COMPROMISOS — prellenar según gravedad
@@ -1406,21 +1412,36 @@ function _actaPrelllenar(faltas, estudiantes) {
   if (!campoComp.value.trim()) {
     if (nMG > 0) {
       campoComp.value =
-        '1. No reincidir en las conductas que motivaron esta acta.\n'
-        +'2. El/la representante familiar asume conocimiento del hecho y se compromete a evitar reincidencia.\n'
-        +'3. Se informa que una nueva infracción activará el proceso previsto en los Art. 25 y 26 del Reglamento Interno (expulsión definitiva).\n'
-        +'4. Participar en orientación psicopedagógica según derivación institucional.';
+        'El/la estudiante se compromete a:\n'
+        +'1. Reflexionar sobre las consecuencias de su conducta y asumir responsabilidad personal ante la comunidad educativa.\n'
+        +'2. No reincidir en los comportamientos que motivaron la presente acta disciplinaria.\n'
+        +'3. Participar activamente en el proceso de orientación psicopedagógica dispuesto por la institución.\n'
+        +'4. Demostrar, mediante acciones concretas y verificables, un cambio positivo en su conducta.\n\n'
+        +'El/la representante familiar se compromete a:\n'
+        +'5. Tomar conocimiento formal de la situación y asumir corresponsabilidad en el proceso formativo.\n'
+        +'6. Establecer canales de comunicación permanente con la institución para el seguimiento del caso.\n\n'
+        +'⚠ Advertencia: En caso de reincidencia, se activará el proceso disciplinario previsto en los Art. 25 y 26 del Reglamento Interno NSP 2026, que contempla derivación a Dirección y posible desvinculación institucional conforme a la R.M. 0001/2026.';
     } else if (nG > 0) {
       campoComp.value =
-        '1. No reincidir en las conductas que motivaron esta acta.\n'
-        +'2. Cumplir el Reglamento Interno de la U.E. en todos sus artículos.\n'
-        +'3. El/la representante familiar se compromete a reforzar en el hogar los valores institucionales.\n'
-        +'4. Reincidencia activará proceso disciplinario con mayor rigor.';
+        'El/la estudiante se compromete a:\n'
+        +'1. Reconocer la conducta registrada como contraria a los principios de convivencia de la institución.\n'
+        +'2. Respetar íntegramente el Reglamento Interno de la U.E. Marista "Nuestra Señora del Pilar".\n'
+        +'3. Mantener una actitud de respeto hacia sus compañeros, docentes y personal de la institución.\n'
+        +'4. Presentarse a las instancias de seguimiento que determine el equipo pedagógico.\n\n'
+        +'El/la representante familiar se compromete a:\n'
+        +'5. Reforzar en el ámbito familiar los valores institucionales y el cumplimiento de normas de convivencia.\n'
+        +'6. Comunicar oportunamente a la institución cualquier situación que pueda incidir en la conducta del/la estudiante.\n\n'
+        +'⚠ Advertencia: La reincidencia en faltas graves activará un proceso disciplinario de mayor rigor conforme al Reglamento Interno NSP 2026.';
     } else {
       campoComp.value =
-        '1. Mejorar conducta y cumplir el Reglamento Interno NSP 2026.\n'
-        +'2. Comunicar a sus padres/tutores sobre esta situación.\n'
-        +'3. Presentarse a seguimiento con el docente responsable.';
+        'El/la estudiante se compromete a:\n'
+        +'1. Reflexionar sobre la conducta registrada y asumir una actitud de mejora continua en el ámbito escolar.\n'
+        +'2. Cumplir responsablemente con sus obligaciones académicas y de convivencia según el Reglamento Interno NSP 2026.\n'
+        +'3. Mantener comunicación abierta con su docente responsable ante cualquier dificultad.\n\n'
+        +'El/la representante familiar se compromete a:\n'
+        +'4. Tomar conocimiento de la situación y acompañar activamente el proceso formativo del/la estudiante.\n'
+        +'5. Comunicarse con la institución ante cualquier cambio de conducta o situación relevante.\n\n'
+        +'Seguimiento: El/la docente responsable realizará un monitoreo periódico del cumplimiento de los presentes compromisos.';
     }
   }
 }
@@ -1960,7 +1981,7 @@ function generarPDF(nombre, curso){
       +'<td style="padding:5px 8px;font-size:11px;color:#333">'+getArt(r[4])+'</td>'
       +'<td style="padding:5px 8px;font-size:11px;color:#777">'+(r[6]||'—')+'</td></tr>';
   }).join(''):'<tr><td colspan="5" style="text-align:center;padding:20px;color:#999;font-style:italic">Sin registros</td></tr>';
-  var aviso=(nG>0||nMG>0)?'<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin:14px 20px 0;font-size:11px;color:#856404">\u26a0 <strong>Atenci\u00f3n:</strong> Faltas graves o muy graves requieren comunicaci\u00f3n con Direcci\u00f3n (Art. 20\u201321 Reglamento NSP 2026).</div>':'';
+  var aviso=(nG>0||nMG>0)?'<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin:14px 20px 0;font-size:11px;color:#856404">&#9888; <strong>Atención:</strong> Las infracciones de carácter grave o muy grave requieren comunicación formal con la Dirección (Art. 20–21 Reglamento NSP 2026) y notificación al representante familiar en un plazo no mayor a 24 horas.</div>':'';
   var html='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe \u2014 '+nombre+'</title>'
     +'<style>@page{margin:1.5cm}body{font-family:Arial,sans-serif;color:#222;margin:0}'
     +'.hdr{background:#1e3a5f;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}'
