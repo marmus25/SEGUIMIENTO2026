@@ -618,6 +618,27 @@ window._FB = { db:_db, ref, push, set, get, onValue, remove, child };
 // ── FIREBASE HELPERS (reemplazan al GAS) ────────────────────────────
 const FB = ()=>window._FB; // acceso seguro
 
+// ── TELEGRAM NOTIFICACIONES ─────────────────────────────────────────
+const TG_TOKEN = '8731898326:AAHoNVnHTXy3pEINcFnWQXAT_Vtt80mT8fY';
+const TG_CHAT  = '7700836433';
+
+async function tgNotificar(p){
+  try{
+    const tipo = p.tipo==='L'?'🟡 LEVE':p.tipo==='G'?'🔴 GRAVE':'🚨 MUY GRAVE';
+    const texto = `${tipo} — ${p.codigo}\n`
+      +`👤 *${p.estudiante||p.nombre||'—'}*\n`
+      +`🏫 Curso: ${p.curso||'—'}\n`
+      +`📋 ${p.descripcion||p.codigo||'—'}\n`
+      +`👨‍🏫 Docente: ${p.docente||'—'}\n`
+      +`📅 ${p.fecha||new Date().toLocaleDateString('es-BO')}`;
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:TG_CHAT, text:texto, parse_mode:'Markdown'})
+    });
+  }catch(e){}
+}
+
 async function fbGuardarRegistro(p){
   const {db,ref,push}=FB();
   const fecha = p.fecha || new Date().toLocaleDateString('es-BO');
@@ -626,6 +647,7 @@ async function fbGuardarRegistro(p){
     tipo:p.tipo, codigo:p.codigo, descripcion:p.descripcion||'',
     docente:p.docente||'', ts:Date.now()
   });
+  tgNotificar({...p, fecha});
 }
 
 async function fbGuardarBatch(registros){
