@@ -679,20 +679,7 @@ const TG_TOKEN = '8731898326:AAHoNVnHTXy3pEINcFnWQXAT_Vtt80mT8fY';
 const TG_CHAT  = '7700836433';
 
 async function tgNotificar(p){
-  try{
-    const tipo = p.tipo==='L'?'🟡 LEVE':p.tipo==='G'?'🔴 GRAVE':'🚨 MUY GRAVE';
-    const texto = `${tipo} — ${p.codigo}\n`
-      +`👤 *${p.estudiante||p.nombre||'—'}*\n`
-      +`🏫 Curso: ${p.curso||'—'}\n`
-      +`📋 ${p.descripcion||p.codigo||'—'}\n`
-      +`👨‍🏫 Docente: ${p.docente||'—'}\n`
-      +`📅 ${p.fecha||new Date().toLocaleDateString('es-BO')}`;
-    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:TG_CHAT, text:texto, parse_mode:'Markdown'})
-    });
-  }catch(e){}
+  // NOTIFICACIONES TELEGRAM DESACTIVADAS TEMPORALMENTE
 }
 
 async function fbGuardarRegistro(p){
